@@ -1,135 +1,3 @@
-// public/script.js
-// document.addEventListener("DOMContentLoaded", () => {
-//   const form = document.getElementById("conversion-form");
-//   const figmaKeyInput = document.getElementById("figma-key");
-//   const submitButton = document.getElementById("submit-button");
-//   const progressContainer = document.getElementById("progress-container");
-//   const progressBar = document.getElementById("progress-bar");
-//   const statusMessage = document.getElementById("status-message");
-//   const previewFrame = document.getElementById("preview-frame");
-//   const previewContainer = document.getElementById("preview-container");
-//   const downloadButton = document.getElementById("download-button");
-
-//   let jobStatusInterval = null;
-
-//   form.addEventListener("submit", async (e) => {
-//     e.preventDefault();
-
-//     const figmaKey = figmaKeyInput.value.trim();
-//     if (!figmaKey) {
-//       alert("Please enter a Figma file key");
-//       return;
-//     }
-
-//     try {
-//       submitButton.disabled = true;
-//       submitButton.textContent = "Processing...";
-//       progressContainer.style.display = "block";
-//       previewContainer.style.display = "none";
-//       downloadButton.style.display = "none";
-
-//       // Submit the job
-//       const response = await fetch("/api/convert", {
-//         method: "POST",
-//         headers: {
-//           "Content-Type": "application/json",
-//         },
-//         body: JSON.stringify({ figmaKey }),
-//       });
-
-//       if (!response.ok) {
-//         const errorData = await response.json();
-//         throw new Error(
-//           errorData.error || "Failed to start conversion process"
-//         );
-//       }
-
-//       const { jobId } = await response.json();
-//       if (!jobId) {
-//         throw new Error("No job ID returned from server");
-//       }
-
-//       // Start polling for job status
-//       monitorJobStatus(jobId);
-//     } catch (error) {
-//       showError(`Error: ${error.message}`);
-//       resetForm();
-//     }
-//   });
-
-//   function monitorJobStatus(jobId) {
-//     // Clear any existing interval
-//     if (jobStatusInterval) {
-//       clearInterval(jobStatusInterval);
-//     }
-
-//     // Start polling for status
-//     jobStatusInterval = setInterval(async () => {
-//       try {
-//         const response = await fetch(`/api/status/${jobId}`);
-//         if (!response.ok) {
-//           throw new Error("Failed to get job status");
-//         }
-
-//         const jobStatus = await response.json();
-//         updateStatusUI(jobStatus);
-
-//         // Stop polling once the job is completed or failed
-//         if (jobStatus.status === "completed" || jobStatus.status === "failed") {
-//           clearInterval(jobStatusInterval);
-
-//           if (jobStatus.status === "completed") {
-//             showPreview(jobStatus.previewUrl);
-//             showDownloadButton(jobId);
-//           }
-
-//           resetForm();
-//         }
-//       } catch (error) {
-//         showError(`Error checking job status: ${error.message}`);
-//         clearInterval(jobStatusInterval);
-//         resetForm();
-//       }
-//     }, 2000); // Check every 2 seconds
-//   }
-
-//   function updateStatusUI(jobStatus) {
-//     progressBar.style.width = `${jobStatus.progress}%`;
-//     statusMessage.textContent = jobStatus.message || "Processing...";
-
-//     if (jobStatus.status === "failed") {
-//       progressBar.classList.add("error");
-//       statusMessage.classList.add("error");
-//     } else {
-//       progressBar.classList.remove("error");
-//       statusMessage.classList.remove("error");
-//     }
-//   }
-
-//   function showPreview(previewUrl) {
-//     previewContainer.style.display = "block";
-//     previewFrame.src = previewUrl;
-//   }
-
-//   function showDownloadButton(jobId) {
-//     downloadButton.style.display = "block";
-//     downloadButton.onclick = () => {
-//       window.location.href = `/api/download/${jobId}`;
-//     };
-//   }
-
-//   function showError(message) {
-//     statusMessage.textContent = message;
-//     statusMessage.classList.add("error");
-//     progressBar.classList.add("error");
-//   }
-
-//   function resetForm() {
-//     submitButton.disabled = false;
-//     submitButton.textContent = "Convert";
-//   }
-// });
-
 const API_BASE = "http://localhost:3000";
 let mediaRecorder;
 let audioChunks = [];
@@ -252,6 +120,33 @@ function stopRecording() {
   }
 }
 
+// async function processVoiceRecording(audioBlob) {
+//   const formData = new FormData();
+//   formData.append("audio", audioBlob, "recording.wav");
+
+//   try {
+//     const response = await fetch(`${API_BASE}/api/voice-to-angular`, {
+//       method: "POST",
+//       body: formData,
+//     });
+
+//     const data = await response.json();
+
+//     if (response.ok) {
+//       const transcription = data.transcription; // Get transcription
+//       document.querySelector("#voice-transcript").value = transcription; // Display transcription
+//       showStatus("Voice processing completed!", "success");
+//       document.querySelector("#voice-convert-button").disabled = false;
+//     } else {
+//       showStatus(data.error || "Failed to process voice command", "error");
+//     }
+//   } catch (error) {
+//     showStatus("Error: Unable to connect to server", "error");
+//   }
+
+//   document.querySelector(".voice-status").textContent = "Ready to record";
+// }
+
 async function processVoiceRecording(audioBlob) {
   const formData = new FormData();
   formData.append("audio", audioBlob, "recording.wav");
@@ -265,9 +160,13 @@ async function processVoiceRecording(audioBlob) {
     const data = await response.json();
 
     if (response.ok) {
-      const transcription = data.transcription; // Get transcription
-      document.querySelector("#voice-transcript").value = transcription; // Display transcription
-      showStatus("Voice processing completed!", "success");
+      const transcription = data.transcription;
+      document.querySelector("#voice-transcript").value = transcription;
+
+      // This is the key - set the jobId from the response
+      jobId = data.jobId;
+
+      showStatus("Voice processed! Click Convert to continue.", "success");
       document.querySelector("#voice-convert-button").disabled = false;
     } else {
       showStatus(data.error || "Failed to process voice command", "error");
@@ -285,8 +184,63 @@ async function convertFromVoice() {
     return;
   }
 
-  startPolling();
+  showStatus("Converting voice design to Angular...", "processing");
+  startPolling(); // Use the common polling mechanism
+
+  // Hide the separate voice feedback since we're using the common one
+  document.getElementById("voice-feedback").style.display = "none";
 }
+
+// async function convertFromVoice() {
+//   if (!jobId) {
+//     showStatus("Please record a voice command first", "error");
+//     return;
+//   }
+
+//   // Show feedback section
+//   const feedbackSection = document.getElementById("voice-feedback");
+//   const statusMessage = document.getElementById("voice-status-message");
+//   const progressBar = document.getElementById("voice-progress");
+//   const progressBarFill = progressBar.querySelector(".progress-bar-fill");
+//   const resultSection = document.getElementById("voice-result");
+//   const previewLink = document.getElementById("voice-preview-link");
+//   const downloadLink = document.getElementById("voice-download-link");
+
+//   feedbackSection.style.display = "block";
+//   statusMessage.textContent = "Processing your voice command...";
+//   progressBar.style.display = "block";
+//   progressBarFill.style.width = "0%";
+//   resultSection.style.display = "none";
+
+//   // Poll the backend for job status
+//   const interval = setInterval(async () => {
+//     try {
+//       const response = await fetch(`${API_BASE}/api/status/${jobId}`);
+//       const data = await response.json();
+
+//       if (data.status === "processing") {
+//         progressBarFill.style.width = `${data.progress}%`;
+//         statusMessage.textContent = data.message;
+//       } else if (data.status === "completed") {
+//         clearInterval(interval);
+//         progressBarFill.style.width = "100%";
+//         statusMessage.textContent = "Conversion completed successfully!";
+//         resultSection.style.display = "block";
+//         previewLink.href = data.previewUrl;
+//         downloadLink.href = data.downloadUrl;
+//       } else if (data.status === "failed") {
+//         clearInterval(interval);
+//         statusMessage.textContent = `Conversion failed: ${data.message}`;
+//         progressBar.style.display = "none";
+//       }
+//     } catch (error) {
+//       clearInterval(interval);
+//       statusMessage.textContent = "Error: Unable to fetch job status.";
+//       progressBar.style.display = "none";
+//     }
+//   }, 2000);
+//   //startPolling();
+// }
 
 // Status polling
 function startPolling() {
@@ -339,4 +293,3 @@ function showStatus(message, type) {
   statusEl.className = `status-message ${type}`;
   statusEl.style.display = "block";
 }
-
