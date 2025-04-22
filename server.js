@@ -25,16 +25,21 @@ const FIGMA_API_BASE = "https://api.figma.com/v1";
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const FIGMA_TOKEN = process.env.FIGMA_TOKEN;
 const PORT = process.env.PORT || 3000;
+
 const PROCESSING_QUEUE = new Map();
+
 const LLMMemory = require("./memory-service");
 const CodeAnalyzer = require("./code-analyzer");
+
 const llmMemory = new LLMMemory();
 const codeAnalyzer = new CodeAnalyzer(llmMemory);
+
 // Middleware to log requests
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
   next();
 });
+
 // Route to handle Figma to Angular conversion
 app.post("/api/convert", async (req, res) => {
   try {
@@ -65,6 +70,7 @@ app.post("/api/convert", async (req, res) => {
     res.status(500).json({ error: "Failed to start conversion process" });
   }
 });
+
 // New route for text-based input
 app.post("/api/text-to-angular", async (req, res) => {
   try {
@@ -94,15 +100,18 @@ app.post("/api/text-to-angular", async (req, res) => {
     res.status(500).json({ error: "Failed to start conversion process" });
   }
 });
+
 // New route for voice-based input
 app.post("/api/voice-to-angular", upload.single("audio"), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: "Voice file is required" });
     }
+
     const audioFilePath = req.file.path;
     const transcription = await convertVoiceToText(audioFilePath); // Get transcription
     const jobId = uuidv4();
+
     PROCESSING_QUEUE.set(jobId, {
       status: "queued",
       progress: 0,
@@ -112,12 +121,14 @@ app.post("/api/voice-to-angular", upload.single("audio"), async (req, res) => {
       inputType: "voice",
       transcription,
     });
+
     res.status(202).json({
       jobId,
       transcription, // Return transcription to frontend
       message: "Voice processing started",
       status: "queued",
     });
+
     // Start the voice-to-design process asynchronously
     processVoiceToAngular(jobId, req.file.path);
   } catch (error) {
@@ -125,6 +136,7 @@ app.post("/api/voice-to-angular", upload.single("audio"), async (req, res) => {
     res.status(500).json({ error: "Failed to start conversion process" });
   }
 });
+
 // New function to process text input to Angular
 async function processTextToAngular(jobId, description) {
   const jobData = PROCESSING_QUEUE.get(jobId);
@@ -137,6 +149,7 @@ async function processTextToAngular(jobId, description) {
       10,
       "Generating design from description"
     );
+
     // First, convert the text description to a design structure
     const designStructure = await generateDesignFromText(description);
     // Save the generated design
@@ -153,6 +166,7 @@ async function processTextToAngular(jobId, description) {
       30,
       "Converting design to Angular code"
     );
+
     // Generate Angular code from the design structure
     const angularFiles = await generateAngularCode(designStructure);
     // Continue with the existing workflow (same as processFigmaToAngular)
@@ -170,6 +184,7 @@ async function processTextToAngular(jobId, description) {
     }
   }
 }
+
 // New function to process voice input to Angular
 async function processVoiceToAngular(jobId, audioFilePath) {
   try {
@@ -178,8 +193,15 @@ async function processVoiceToAngular(jobId, audioFilePath) {
     const jobData = PROCESSING_QUEUE.get(jobId);
     jobData.description = description;
     PROCESSING_QUEUE.set(jobId, jobData);
+
     await processTextToAngular(jobId, description);
     await fs.remove(audioFilePath);
+
+    // Add preview and download URLs to the job status
+    const jobStatus = PROCESSING_QUEUE.get(jobId);
+    jobStatus.previewUrl = `/previews/${jobId}/index.html`;
+    jobStatus.downloadUrl = `/api/download/${jobId}`;
+    PROCESSING_QUEUE.set(jobId, jobStatus);
   } catch (error) {
     console.error(`Error processing voice job ${jobId}:`, error);
     updateJobStatus(
@@ -190,6 +212,7 @@ async function processVoiceToAngular(jobId, audioFilePath) {
     );
   }
 }
+
 // Function to generate design structure from text description
 async function generateDesignFromText(description) {
   const prompt = `Based on the following description, generate a detailed design structure that can be converted to Angular components. The structure should be in the same format as Figma JSON but simplified and focused on the essential UI elements.
@@ -226,6 +249,7 @@ Remember to make the design responsive and follow modern web design patterns.`;
         }),
       }
     );
+
     if (!response.ok) {
       throw new Error(
         `Failed to generate design from text: ${response.statusText}`
@@ -242,22 +266,28 @@ Remember to make the design responsive and follow modern web design patterns.`;
     throw error;
   }
 }
+
 async function convertVoiceToText(audioFilePath) {
   return new Promise((resolve, reject) => {
     console.log(`Processing audio file: ${audioFilePath}`);
+
     // Call the Python script
     const pythonProcess = spawn("python", [
       path.join(__dirname, "transcribe.py"),
       audioFilePath,
     ]);
+
     let transcription = "";
     let errorOutput = "";
+
     pythonProcess.stdout.on("data", (data) => {
       transcription += data.toString();
     });
+
     pythonProcess.stderr.on("data", (data) => {
       errorOutput += data.toString();
     });
+
     pythonProcess.on("close", (code) => {
       if (code === 0) {
         resolve(transcription.trim());
@@ -268,6 +298,7 @@ async function convertVoiceToText(audioFilePath) {
     });
   });
 }
+
 // Function to continue the Angular conversion process
 async function continueAngularConversion(jobId, workDir, angularFiles) {
   try {
@@ -277,9 +308,11 @@ async function continueAngularConversion(jobId, workDir, angularFiles) {
     updateJobStatus(jobId, "processing", 50, "Creating Angular project");
     // Agent 4: Create Angular project and add generated components
     await createAngularProject(workDir, angularFiles);
+
     updateJobStatus(jobId, "processing", 70, "Building Angular project");
     // Agent 5: Build and serve Angular project
     const previewUrl = await buildAndServeAngular(jobId, workDir);
+
     // Create downloadable ZIP of the project
     const zipPath = await createProjectZip(workDir, jobId);
     // Update job as completed
@@ -332,6 +365,7 @@ app.post("/api/feedback/:jobId", async (req, res) => {
     res.status(500).json({ error: "Failed to process feedback" });
   }
 });
+
 // Endpoint to get current system memory
 app.get("/api/memory", async (req, res) => {
   try {
@@ -354,6 +388,7 @@ app.get("/api/status/:jobId", (req, res) => {
   const jobStatus = PROCESSING_QUEUE.get(jobId);
   res.json(jobStatus);
 });
+
 // Main processing pipeline
 async function processFigmaToAngular(jobId, figmaKey) {
   const jobData = PROCESSING_QUEUE.get(jobId);
@@ -362,6 +397,7 @@ async function processFigmaToAngular(jobId, figmaKey) {
     await fs.ensureDir(workDir);
     // Update job status
     updateJobStatus(jobId, "processing", 10, "Fetching Figma design data");
+
     // Agent 1: Fetch Figma JSON using API
     const figmaData = await fetchFigmaData(figmaKey);
     await fs.writeJson(path.join(workDir, "figma-data.json"), figmaData, {
@@ -373,11 +409,13 @@ async function processFigmaToAngular(jobId, figmaKey) {
       30,
       "Generating Angular code from Figma data"
     );
+
     // Agent 2 & 3: Generate Angular code using Gemini API
     const angularFiles = await generateAngularCode(figmaData);
     for (const [filename, content] of Object.entries(angularFiles)) {
       await fs.writeFile(path.join(workDir, filename), content);
     }
+
     updateJobStatus(jobId, "processing", 50, "Creating Angular project");
     // Agent 4: Create Angular project and add generated components
     await createAngularProject(workDir, angularFiles);
@@ -422,6 +460,7 @@ async function fetchFigmaData(figmaKey) {
         "X-Figma-Token": FIGMA_TOKEN,
       },
     });
+
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(
@@ -703,6 +742,7 @@ bootstrapApplication(AppComponent, {
   ]
 }).catch(err => console.error(err));`;
   }
+
   // Verify CSS classes used in HTML exist in CSS files
   if (
     verifiedFiles["app.component.html"] &&
@@ -907,6 +947,7 @@ async function createAngularProject(workDir, angularFiles) {
       },
       { spaces: 2 }
     );
+    // Write environment files
     await fs.outputFile(
       path.join(srcDir, "environments", "environment.ts"),
       `export const environment = { production: false };`
@@ -917,12 +958,12 @@ async function createAngularProject(workDir, angularFiles) {
     );
     // Create index.html if not provided
     if (!angularFiles["index.html"]) {
-      const title = description || "Generated Angular Project"; 
+      const title = jobData.description || "Generated Angular Project";
       angularFiles["index.html"] = `<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>${title}</title>
+  <title>${title}</title>  
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
   <link rel="stylesheet" href="styles.css">
@@ -970,6 +1011,7 @@ bootstrapApplication(AppComponent, {
         "import { AppComponent } from './app/app.component';"
       );
     }
+    // Write component and support files
     for (const [filename, content] of Object.entries(angularFiles)) {
       if (filename.includes(".component")) {
         // Component files go in the app directory
@@ -981,6 +1023,7 @@ bootstrapApplication(AppComponent, {
         await fs.outputFile(filePath, content);
       }
     }
+    // Create favicon if not exists
     try {
       await fs.copy(
         path.join(__dirname, "assets", "favicon.ico"),
@@ -988,6 +1031,7 @@ bootstrapApplication(AppComponent, {
       );
     } catch (error) {
       console.log("Using default favicon");
+      // Create a simple empty favicon
       await fs.writeFile(path.join(srcDir, "favicon.ico"), "");
     }
     return true;
@@ -1015,6 +1059,7 @@ async function buildAndServeAngular(jobId, workDir) {
       );
       // Check if there were any warnings to learn from
       if (buildResult.stderr && buildResult.stderr.includes("Warning:")) {
+        console.warn("Build completed with warnings:", buildResult.stderr);
         const warningLines = buildResult.stderr
           .split("\n")
           .filter((line) => line.includes("Warning:"));
@@ -1074,17 +1119,12 @@ async function buildAndServeAngular(jobId, workDir) {
         console.log(`Found stylesheet: ${styleFile}`);
         // Update the index.html to use the correct hashed filename
         let indexContent = await fs.readFile(indexPath, "utf8");
-        // Replace any reference to styles.css with the hashed filename
-
-        // indexContent = indexContent.replace(
-        //   /<link rel="stylesheet" href="styles\.css">/,
-        //   `<link rel="stylesheet" href="${styleFile}">`
-        // );
-
+        indexContent = indexContent.replace(/<base href="\/">/g, "");
         indexContent = indexContent.replace(
           /<link rel="stylesheet" href="styles\.css">/g,
           ""
         );
+        // If there's no stylesheet link, add one
         if (!indexContent.includes('<link rel="stylesheet"')) {
           indexContent = indexContent.replace(
             "</head>",
@@ -1229,6 +1269,7 @@ function runCommand(command, args = [], options = {}) {
 }
 setInterval(() => {
   const now = new Date();
+
   for (const [jobId, job] of PROCESSING_QUEUE.entries()) {
     if (job.status === "completed" && now - job.updated > 2 * 60 * 60 * 1000) {
       cleanupJob(jobId);
@@ -1237,7 +1278,7 @@ setInterval(() => {
       cleanupJob(jobId);
     }
   }
-}, 15 * 60 * 1000); 
+}, 15 * 60 * 1000); // Run every 15 minutes
 app.listen(PORT, () => {
   console.log(`Figma to Angular server running on port ${PORT}`);
 });
