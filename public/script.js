@@ -292,4 +292,8 @@ function showStatus(message, type) {
   statusEl.textContent = message;
   statusEl.className = `status-message ${type}`;
   statusEl.style.display = "block";
+
+  if (type === "error") {
+    alert(message); // Show a popup when input provided by user is not relevant to the project domain for ex: sports, wars, political information etc.
+  }
 }
