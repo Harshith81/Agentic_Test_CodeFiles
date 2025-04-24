@@ -79,6 +79,80 @@ app.post("/api/text-to-angular", async (req, res) => {
     if (!description) {
       return res.status(400).json({ error: "Design description is required" });
     }
+
+    // According to our project domain we have identified these keywords
+    const allowedKeywords = [
+      "login",
+      "signin",
+      "signup",
+      "register",
+      "forgot password",
+      "reset password",
+      "dashboard",
+      "analytics",
+      "statistics",
+      "reports",
+      "overview",
+      "form",
+      "input",
+      "fields",
+      "text field",
+      "dropdown",
+      "checkbox",
+      "radio button",
+      "navbar",
+      "sidebar",
+      "menu",
+      "header",
+      "footer",
+      "grid",
+      "container",
+      "button",
+      "submit",
+      "cancel",
+      "next",
+      "previous",
+      "back",
+      "about us",
+      "contact us",
+      "profile",
+      "settings",
+      "help",
+      "faq",
+      "product",
+      "cart",
+      "checkout",
+      "order",
+      "payment",
+      "wishlist",
+      "portfolio",
+      "projects",
+      "gallery",
+      "showcase",
+      "landing page",
+      "hero section",
+      "features",
+      "pricing",
+      "testimonials",
+      "responsive",
+      "mobile",
+      "desktop",
+      "modern design",
+      "clean layout",
+    ];
+
+    // Check if the description contains any allowed keyword
+    const isValid = allowedKeywords.some((keyword) =>
+      description.toLowerCase().includes(keyword)
+    );
+
+    if (!isValid) {
+      return res.status(400).json({
+        error:
+          "Please provide input relevant to the project domain (e.g., UI/UX design).",
+      });
+    }
+
     const jobId = uuidv4();
     PROCESSING_QUEUE.set(jobId, {
       status: "queued",
@@ -110,6 +184,78 @@ app.post("/api/voice-to-angular", upload.single("audio"), async (req, res) => {
 
     const audioFilePath = req.file.path;
     const transcription = await convertVoiceToText(audioFilePath); // Get transcription
+
+    // According to our project domain we have identified these keywords
+    const allowedKeywords = [
+      "login",
+      "signin",
+      "signup",
+      "register",
+      "forgot password",
+      "reset password",
+      "dashboard",
+      "analytics",
+      "statistics",
+      "reports",
+      "overview",
+      "form",
+      "input",
+      "fields",
+      "text field",
+      "dropdown",
+      "checkbox",
+      "radio button",
+      "navbar",
+      "sidebar",
+      "menu",
+      "header",
+      "footer",
+      "grid",
+      "container",
+      "button",
+      "submit",
+      "cancel",
+      "next",
+      "previous",
+      "back",
+      "about us",
+      "contact us",
+      "profile",
+      "settings",
+      "help",
+      "faq",
+      "product",
+      "cart",
+      "checkout",
+      "order",
+      "payment",
+      "wishlist",
+      "portfolio",
+      "projects",
+      "gallery",
+      "showcase",
+      "landing page",
+      "hero section",
+      "features",
+      "pricing",
+      "testimonials",
+      "responsive",
+      "mobile",
+      "desktop",
+      "modern design",
+      "clean layout",
+    ];
+    const isValid = allowedKeywords.some((keyword) =>
+      transcription.toLowerCase().includes(keyword)
+    );
+
+    if (!isValid) {
+      return res.status(400).json({
+        error:
+          "Please provide input relevant to the project domain (e.g., UI/UX design).",
+      });
+    }
+
     const jobId = uuidv4();
 
     PROCESSING_QUEUE.set(jobId, {
