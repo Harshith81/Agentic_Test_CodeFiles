@@ -48,6 +48,16 @@ app.post("/api/convert", async (req, res) => {
     if (!figmaKey) {
       return res.status(400).json({ error: "Figma file key is required" });
     }
+
+    // Validate the Figma file key by attempting to fetch the design data
+    try {
+      await fetchFigmaData(figmaKey);
+    } catch (error) {
+      return res.status(400).json({
+        error: "Invalid Figma file key. Please provide a valid key.",
+      });
+    }
+
     // Generate a unique job ID
     const jobId = uuidv4();
     // Create job entry in processing queue
@@ -71,7 +81,102 @@ app.post("/api/convert", async (req, res) => {
   }
 });
 
-// New route for text-based input
+// Helper function to validate input
+function validateInput(input) {
+  const allowedKeywords = [
+    "login",
+    "signin",
+    "signup",
+    "register",
+    "forgot password",
+    "reset password",
+    "dashboard",
+    "analytics",
+    "statistics",
+    "reports",
+    "overview",
+    "form",
+    "input",
+    "fields",
+    "text field",
+    "dropdown",
+    "checkbox",
+    "radio button",
+    "navbar",
+    "sidebar",
+    "menu",
+    "header",
+    "footer",
+    "grid",
+    "container",
+    "button",
+    "submit",
+    "cancel",
+    "next",
+    "previous",
+    "back",
+    "about us",
+    "contact us",
+    "profile",
+    "settings",
+    "help",
+    "faq",
+    "product",
+    "cart",
+    "checkout",
+    "order",
+    "payment",
+    "wishlist",
+    "portfolio",
+    "projects",
+    "gallery",
+    "showcase",
+    "landing page",
+    "hero section",
+    "features",
+    "pricing",
+    "testimonials",
+    "responsive",
+    "mobile",
+    "desktop",
+    "modern design",
+    "clean layout",
+  ];
+  const prohibitedKeywords = [
+    "politics",
+    "war",
+    "violence",
+    "hate",
+    "malicious",
+    "dangerous",
+  ];
+
+  const isRelevant = allowedKeywords.some((keyword) =>
+    input.toLowerCase().includes(keyword)
+  );
+
+  const isProhibited = prohibitedKeywords.some((keyword) =>
+    input.toLowerCase().includes(keyword)
+  );
+
+  if (isProhibited) {
+    return {
+      valid: false,
+      error: "Input contains prohibited & out-of-scope content.",
+    };
+  }
+
+  if (!isRelevant) {
+    return {
+      valid: false,
+      error: "Input is not proper and relevant to the project domain.",
+    };
+  }
+
+  return { valid: true };
+}
+
+// Text-to-Angular endpoint
 app.post("/api/text-to-angular", async (req, res) => {
   try {
     const { description } = req.body;
@@ -80,77 +185,9 @@ app.post("/api/text-to-angular", async (req, res) => {
       return res.status(400).json({ error: "Design description is required" });
     }
 
-    // According to our project domain we have identified these keywords
-    const allowedKeywords = [
-      "login",
-      "signin",
-      "signup",
-      "register",
-      "forgot password",
-      "reset password",
-      "dashboard",
-      "analytics",
-      "statistics",
-      "reports",
-      "overview",
-      "form",
-      "input",
-      "fields",
-      "text field",
-      "dropdown",
-      "checkbox",
-      "radio button",
-      "navbar",
-      "sidebar",
-      "menu",
-      "header",
-      "footer",
-      "grid",
-      "container",
-      "button",
-      "submit",
-      "cancel",
-      "next",
-      "previous",
-      "back",
-      "about us",
-      "contact us",
-      "profile",
-      "settings",
-      "help",
-      "faq",
-      "product",
-      "cart",
-      "checkout",
-      "order",
-      "payment",
-      "wishlist",
-      "portfolio",
-      "projects",
-      "gallery",
-      "showcase",
-      "landing page",
-      "hero section",
-      "features",
-      "pricing",
-      "testimonials",
-      "responsive",
-      "mobile",
-      "desktop",
-      "modern design",
-      "clean layout",
-    ];
-
-    // Check if the description contains any allowed keyword
-    const isValid = allowedKeywords.some((keyword) =>
-      description.toLowerCase().includes(keyword)
-    );
-
-    if (!isValid) {
-      return res.status(400).json({
-        error:
-          "Please provide input relevant to the project domain (e.g., UI/UX design).",
-      });
+    const validation = validateInput(description);
+    if (!validation.valid) {
+      return res.status(400).json({ error: validation.error });
     }
 
     const jobId = uuidv4();
@@ -162,12 +199,13 @@ app.post("/api/text-to-angular", async (req, res) => {
       description,
       inputType: "text",
     });
+
     res.status(202).json({
       jobId,
       message: "Design generation process started",
       status: "queued",
     });
-    // Start the text-to-design process asynchronously
+
     processTextToAngular(jobId, description);
   } catch (error) {
     console.error("Text conversion request error:", error);
@@ -175,7 +213,7 @@ app.post("/api/text-to-angular", async (req, res) => {
   }
 });
 
-// New route for voice-based input
+// Voice-to-Angular endpoint
 app.post("/api/voice-to-angular", upload.single("audio"), async (req, res) => {
   try {
     if (!req.file) {
@@ -183,81 +221,14 @@ app.post("/api/voice-to-angular", upload.single("audio"), async (req, res) => {
     }
 
     const audioFilePath = req.file.path;
-    const transcription = await convertVoiceToText(audioFilePath); // Get transcription
+    const transcription = await convertVoiceToText(audioFilePath);
 
-    // According to our project domain we have identified these keywords
-    const allowedKeywords = [
-      "login",
-      "signin",
-      "signup",
-      "register",
-      "forgot password",
-      "reset password",
-      "dashboard",
-      "analytics",
-      "statistics",
-      "reports",
-      "overview",
-      "form",
-      "input",
-      "fields",
-      "text field",
-      "dropdown",
-      "checkbox",
-      "radio button",
-      "navbar",
-      "sidebar",
-      "menu",
-      "header",
-      "footer",
-      "grid",
-      "container",
-      "button",
-      "submit",
-      "cancel",
-      "next",
-      "previous",
-      "back",
-      "about us",
-      "contact us",
-      "profile",
-      "settings",
-      "help",
-      "faq",
-      "product",
-      "cart",
-      "checkout",
-      "order",
-      "payment",
-      "wishlist",
-      "portfolio",
-      "projects",
-      "gallery",
-      "showcase",
-      "landing page",
-      "hero section",
-      "features",
-      "pricing",
-      "testimonials",
-      "responsive",
-      "mobile",
-      "desktop",
-      "modern design",
-      "clean layout",
-    ];
-    const isValid = allowedKeywords.some((keyword) =>
-      transcription.toLowerCase().includes(keyword)
-    );
-
-    if (!isValid) {
-      return res.status(400).json({
-        error:
-          "Please provide input relevant to the project domain (e.g., UI/UX design).",
-      });
+    const validation = validateInput(transcription);
+    if (!validation.valid) {
+      return res.status(400).json({ error: validation.error });
     }
 
     const jobId = uuidv4();
-
     PROCESSING_QUEUE.set(jobId, {
       status: "queued",
       progress: 0,
@@ -270,12 +241,11 @@ app.post("/api/voice-to-angular", upload.single("audio"), async (req, res) => {
 
     res.status(202).json({
       jobId,
-      transcription, // Return transcription to frontend
+      transcription,
       message: "Voice processing started",
       status: "queued",
     });
 
-    // Start the voice-to-design process asynchronously
     processVoiceToAngular(jobId, req.file.path);
   } catch (error) {
     console.error("Voice conversion request error:", error);
@@ -715,8 +685,15 @@ ${memoryGuidelines}
 - Ensure all CSS files are properly included and referenced in the final build
 - Any global styles should be placed in styles.css 
 - Component-specific styles must be placed in app.component.css
-- For Angular builds, ensure styles use correct relative paths
-- Check that @import statements for fonts are properly formatted
+- For Angular builds, ensure styles use correct relative paths   
+- Check that @import statements for fonts are properly formatted  
+
+13. Guardrails:
+- If the input contains harmful, malicious, or prohibited content (e.g., hate speech, violence, or dangerous instructions), respond with:
+  "The input contains prohibited content and cannot be processed. Please provide a valid and safe description."
+- If the input is too vague or lacks sufficient detail (e.g., "Create a React app"), respond with:
+  "The input is too vague. Please provide a detailed description of the design, including specific UI elements, layout, and styling."
+
 
 OUTPUT FORMAT:
 Return complete, functional code without explanations or markdown, structured as:
