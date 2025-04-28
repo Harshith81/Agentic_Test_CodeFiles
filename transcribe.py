@@ -1,5 +1,3 @@
-# Test Code for Openai whisper - need to check other base models like small and medium next!!
-
 import sys
 import whisper
 
@@ -17,6 +15,6 @@ if __name__ == "__main__":
     try:
         transcription = transcribe_audio(audio_file_path)
         print(transcription)
-    except Exception as e:
+    except Exception as e:  
         print(f"Error: {e}", file=sys.stderr)
-        sys.exit(1)
+        sys.exit(1)    
