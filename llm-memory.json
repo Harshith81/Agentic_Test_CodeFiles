@@ -4,33 +4,33 @@
       "pattern": "/@Component\\(\\{\\s*[^}]*standalone:\\s*true/",
       "description": "Properly configured standalone component",
       "example": "@Component({ selector: 'app-root', standalone: true, imports: [CommonModule] })",
-      "count": 42,
+      "count": 45,
       "added": "2025-04-18T03:41:39.059Z",
-      "lastSeen": "2025-04-22T17:05:40.692Z"
+      "lastSeen": "2025-04-25T05:27:17.763Z"
     },
     {
       "pattern": "/bootstrapApplication\\(\\s*AppComponent\\s*,/",
       "description": "Proper bootstrapping of standalone Angular component",
       "example": "bootstrapApplication(AppComponent, { providers: [] })",
-      "count": 42,
+      "count": 45,
       "added": "2025-04-18T03:41:39.063Z",
-      "lastSeen": "2025-04-22T17:05:40.694Z"
+      "lastSeen": "2025-04-25T05:27:17.768Z"
     },
     {
       "pattern": "/\\(click\\)\\s*=\\s*\"[^\"]+\\(\\)\"/",
       "description": "Proper Angular event binding syntax",
       "example": "<button (click)=\"onButtonClick()\">Click Me</button>",
-      "count": 42,
+      "count": 45,
       "added": "2025-04-18T03:41:39.067Z",
-      "lastSeen": "2025-04-22T17:05:40.698Z"
+      "lastSeen": "2025-04-25T05:27:17.772Z"
     },
     {
       "pattern": "build-success",
       "description": "Angular project built successfully without errors",
       "example": "Build completed with proper component structure and dependencies",
-      "count": 37,
+      "count": 40,
       "added": "2025-04-18T03:45:07.889Z",
-      "lastSeen": "2025-04-22T17:09:18.435Z"
+      "lastSeen": "2025-04-25T05:29:29.151Z"
     }
   ],
   "errors": [
@@ -38,9 +38,9 @@
       "pattern": "/rgba?\\(\\s*([0-9]*\\.?[0-9]+)\\s*,\\s*([0-9]*\\.?[0-9]+)\\s*,\\s*([0-9]*\\.?[0-9]+)/g",
       "description": "Color values between 0-1 not multiplied by 255 for RGB",
       "correction": "Multiply RGB values by 255 when converting from Figma format",
-      "count": 22,
+      "count": 25,
       "added": "2025-04-18T03:41:39.054Z",
-      "lastSeen": "2025-04-22T17:05:40.688Z"
+      "lastSeen": "2025-04-25T05:27:17.758Z"
     },
     {
       "pattern": "build-warning",
