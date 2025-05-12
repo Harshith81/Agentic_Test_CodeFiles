@@ -107,16 +107,20 @@ python3 server.py
 2. Open your browser and navigate to http://localhost:3000 (or the port specified in the terminal output).
 
 ### Option 2: Docker Installation
+
 Docker simplifies setup by containerizing the application, ensuring consistency across environments.
 
 ### Step 1: Install Docker
+
 1. Install Docker Desktop (Windows/macOS) or Docker Engine (Linux) from docker.com.
 2. Verify installation:
 ```bash
 docker --version
 docker-compose --version
 ```
+
 ### Step 2: Run the Application
+
 1. Ensure you’re in the project directory (t0.dev).
 2. Build and run the application using Docker Compose:
 ```bash
@@ -131,13 +135,18 @@ docker-compose down
 ```
 
 ## Usage Instructions
+
 Once the application is running, you can use it to generate Angular projects via the web interface. Below is a step-by-step guide to using each feature.
 
 ### 1. Accessing the Application
+
 Open your browser and go to http://localhost:3000 (or the specified port).
 The interface likely includes options for selecting input methods: Figma, Text, or Voice.
+
 ### 2. Generating an Angular Project
+
 ### Option A: Figma to Angular
+
 1. Select Figma Input:
 Choose the “Figma to Angular” option in the UI.
 Authenticate with Figma (may require a Figma API token or OAuth login).
@@ -152,6 +161,7 @@ Preview the generated Angular project in the browser.
 Download the project as a ZIP file.
 
 ### Option B: Text to Angular
+
 1. Select Text Input:
 Choose the “Text to Angular” option.
 2. Enter Description:
@@ -164,6 +174,7 @@ Preview the generated project.
 Download the ZIP file.
 
 ### Option C: Voice to Angular
+
 1. Select Voice Input:
 Choose the “Voice to Angular” option.
 2. Record Description:
@@ -207,11 +218,13 @@ The frontend provides real-time feedback on the project generation process:
     * **Download:** Clicking this button will download the ZIP file of your generated Angular project to your local machine.
   
 ## Previewing the Project
+
 1. The preview feature renders the generated Angular project in the browser.
 2. Interact with the preview to verify functionality (e.g., click buttons, navigate routes).
 3. Note: The preview may be a simplified rendering, as full Angular functionality requires running the project locally.
 
 ## Downloading the Project
+
 1. After generation, click the “Download” button to receive a ZIP file.
 2. Extract the ZIP to access the Angular project, which includes:
 Source code (src/ directory with components, services, etc.)
@@ -225,19 +238,29 @@ ng serve
 ```
 
 ## Troubleshooting
+
 ### Backend Errors:
+
 If whisper fails, ensure ffmpeg is installed and accessible.
 For AWS errors, verify AWS credentials and region settings.
+
 ### Frontend Errors:
+
 If npm start fails, check package.json for scripts and ensure dependencies are installed (npm install).
 Clear the npm cache: npm cache clean --force.
+
 ### Docker Issues:
+
 Ensure Docker is running and you have sufficient disk space.
 Check docker-compose.yml for correct port mappings and environment variables.
 View logs: docker-compose logs.
+
 ### Port Conflicts:
+
 If localhost:3000 is in use, specify a different port: ng serve --port 3001.
+
 ### Figma Integration:
+
 Ensure a valid Figma API token or OAuth setup. Check the application’s documentation or UI for setup instructions.
 
 ## Cleanup
